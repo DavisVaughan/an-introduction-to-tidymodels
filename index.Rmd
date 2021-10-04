@@ -1,6 +1,6 @@
 ---
 title: "An introduction to tidymodels"
-author: Max Kuhn
+author: Davis Vaughan
 output:
   xaringan::moon_reader:
     anchor_sections: FALSE
@@ -17,6 +17,8 @@ output:
       highlightLines: true
       countIncrementalSlides: false
       ratio: "16:9"
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -36,6 +38,7 @@ background-color: #F9F8F3
 ```{r startup, include = FALSE, message = FALSE, warning = FALSE}
 library(glmnet)
 library(glue)
+library(magrittr)
 
 options(digits = 3, width = 80)
 
@@ -51,6 +54,40 @@ hexes <- function(x) {
 }
 ```
 
+---
+# Goals for today
+
+.pull-left[
+
+## ~~Horrify~~ Enlighten you
+
+- Point out weaknesses in the current state of affairs
+
+- Provide motivation for tidymodels
+
+]
+
+.pull-right[
+
+## Encourage you
+
+- Walk through a "typical" tidymodels analysis
+
+## Challenge you
+
+- To try an analysis with tidymodels
+
+- To create consistent R packages using our tools
+
+]
+
+---
+layout: false
+class: inverse, middle, center
+
+# [`tidymodels.org`](https://www.tidymodels.org/)
+
+# _Tidy Modeling with R_ ([`tmwr.org`](https://www.tmwr.org/))
 
 ---
 # Modeling in R
@@ -58,21 +95,30 @@ hexes <- function(x) {
 
 .pull-left[
 .font90[
+
 * R has always had a rich set of modeling tools that it inherited from S. For example, the formula interface has made it simple to specify potentially complex model structures.   
 
 * _R has cutting edge models_. Many researchers in various domains use R as their primary computing environment and their work often results in R packages.
 
 * _It is easy to port or link to other applications_. R doesn't try to be everything to everyone.
+
 ]
 ]
 
 .pull-right[
-However, there is a huge _consistency problem_. For example: 
-* There are two primary methods for specifying what terms are in a model. Not all models have both. 
-* 99% of model functions automatically generate dummy variables. 
-* Many package developers don't know much about the language and omit OOP and other core R components.
 
-Two examples follow... 
+However, there is a huge _consistency problem_. For example: 
+
+.font90[
+
+* There are two primary methods for specifying what terms are in a model. Not all models have both. 
+
+* 99% of model functions automatically generate dummy variables. 
+
+* Many package developers come from other languages (i.e. C) and omit common R idioms.
+
+]
+
 ]
 
 
@@ -136,6 +182,22 @@ three_class_mod <-
     lambda = c(0.01, 0.1, 1)
   )
 
+two_pred <- predict(two_class_mod, newx = new_x, type = "response")
+two_pred <- tibble::as_tibble(two_pred)
+two_pred <- tidyr::pivot_longer(two_pred, everything())
+two_pred <- dplyr::mutate(two_pred, lambda = rep(two_class_mod$lambda, times = 2))
+
+two_pred_prob <- two_pred %>%
+  dplyr::rename(a = value) %>%
+  dplyr::mutate(b = 1 - a) %>%
+  dplyr::select(a, b, lambda) %>%
+  dplyr::arrange(desc(lambda))
+
+two_pred_class <- two_pred %>%
+  dplyr::mutate(pred = factor(ifelse(value >= .5, "a", "b"), levels = c("a", "b"))) %>%
+  dplyr::select(pred, lambda) %>%
+  dplyr::arrange(desc(lambda))
+
 three_pred <- predict(three_class_mod, newx = new_x, type = "response")
 three_pred <- apply(three_pred, 3, function(x) data.frame(x)) 
 three_pred <- dplyr::bind_rows(three_pred)
@@ -173,32 +235,32 @@ A matrix result and we will assume that the $\lambda$ values are in the same ord
 
 **Numeric model, numeric prediction**
 
- - numeric sample x penalty array
+ - numeric `[sample x penalty]` array
 
 --
 
 **Binary model, class prediction**
 
-- _character_ sample x penalty array  (Note: outcome input is required to be a factor)
+- _character_ `[sample x penalty]` array  (Note: outcome input is required to be a factor)
 
 --
 
 **Binary model, probability prediction**
 
-- _numeric_ sample x penalty array (values are 2nd factor level)
+- _numeric_ `[sample x penalty]` array (values are 2nd factor level)
 
 --
 
 **Multinomial model, probability prediction**
 
-- _numeric_ class x sample x penalty array
-
-
+- _numeric_ `[class x sample x penalty]` array
 
 
 ---
 
 # `glmnet` predictions formats
+
+.pull-left-a-lot[
 
 `r emojifont::emoji('flushed')`
 
@@ -208,9 +270,23 @@ Most people have at least four different scripts for the same model
 
 Maybe a structure like this would work better:
 
-```{r better-glmnet, echo = FALSE}
-three_pred
+]
+
+.pull-right-a-little[
+
+```{r better-glmnet-prob, echo = FALSE}
+head(two_pred_class, n = 3)
 ```
+
+```{r better-glmnet-class, echo = FALSE}
+head(two_pred_prob, n = 3)
+```
+
+```{r better-glmnet-class-2, echo = FALSE}
+head(three_pred, n = 3)
+```
+
+]
 
 ---
 
@@ -218,16 +294,13 @@ three_pred
 
 Unless you are doing a simple one-off data analysis, the lack of consistency between, and sometimes within, R packages can be very frustrating. 
 
-If we could agree on a set of common conventions for interfaces, return values, and other components, everyone's life would be easier. 
+If we could agree on a set of common conventions for interfaces, return values, and other components, everyone's life would be easier.
 
 Once we agree on conventions, **two challenges** are: 
 
  * As of `r format(Sys.time(), "%b %Y")`, there are over `r pkgs`K R packages on CRAN. How do we "harmonize" these without breaking everything? 
  
- * How can we guide new R users (or people unfamiliar with R) in making good choices in their modeling packages?
- 
-These prospective and retrospective problems will be addressed in a minute. 
-
+ * How can we guide new R users (or people unfamiliar with R) in making good choices as they develop new modeling packages?
 
 ---
 class: middle
@@ -237,17 +310,15 @@ background-size: contain
 
 .pull-left[
 
-## Our job is to make modeling data with R ~~suck less~~ better<sup>1</sup>. 
+## Our job is to reduce the pain points of modeling with R
 
-## "Modeling" includes everything from classical statistical methods to machine learning. 
-
-.footnote[<sup>1</sup> Narrator: _It's actually pretty good_]
+## "Modeling" includes everything from classical statistical methods to machine learning
 
 ]
 
 ---
 
-# The Tidyverse
+# Tidyverse
 
 .pull-left[
 
@@ -263,9 +334,8 @@ The principles of the tidyverse:
 
 This results in more specific conventions around interfaces, function naming, etc. 
 
-]s
+]
 .pull-right[
-For example, we try to use common prefixes for auto-complete:  `grid_latin_hypercube()`, `grid_max_entropy()`, ...
 
 There is also the notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf): 
 
@@ -282,9 +352,9 @@ Based on these ideas, we can create modeling packages that have predictable resu
 
 # Tidymodels 
 
-`tidymodels` is a collection of modeling packages that live in the tidyverse and are designed in the same way. 
+`tidymodels` is a collection of modeling packages that live in the tidyverse that are guided by the same design principles.
 
-My goals for tidymodels are:
+Our goals for tidymodels are:
 
 1. Encourage empirical validation and good methodology.
 
@@ -292,9 +362,9 @@ My goals for tidymodels are:
 
 1. Build highly reusable infrastructure.
 
-1. Enable a wider variety of methodologies.
+1. Enable a wider variety and combination of methodologies.
 
-The `tidymodels` packages address the *retrospective* and *prospective* issues. We are also developing a set of principles and templates to make *prospective* (new R packages) easy to create. 
+The `tidymodels` packages address the *retrospective* issues. We have also developed a set of principles and templates to solve the *prospective* issue by making it easy to create new modeling package that follow best practices.
 
 ---
 background-image: url(images/hex_wall.png)
@@ -316,7 +386,6 @@ class: inverse, middle, center
 
 # Selected Modeling Packages 
 
-
 * [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm`, `nls`, or `t.test`, and turns them into tidy data frames.
 
 * [`recipes`](https://recipes.tidymodels.org/) is a general data preprocessor with a modern interface. It can create model matrices that incorporate feature engineering, imputation, and other tools.
@@ -327,14 +396,9 @@ class: inverse, middle, center
 
 * [`tune`](https://tune.tidymodels.org/) has functions for grid search and sequential optimization of model parameters. 
 
-
-
-
 ---
 
 # Loading the Meta-Package `r I(hexes(c("tidymodels")))`
-
-.pull-left-a-lot[
 
 .code60[
 ```{r detach, include = FALSE}
@@ -348,20 +412,43 @@ tidymodels_prefer(quiet = FALSE)
 ```
 ]
 
-]
-.pull-right-a-little[
+---
 
-.font90[
+# Our problem
+
+.pull-left-a-lot[
 
 Let's start by predicting the [ridership of the Chicago "L" trains](https://bookdown.org/max/FES/chicago-intro.html). 
 
 We have data over 5,698 days between 2001 and 2016 in `data(Chicago, package = "modeldata")`.
 
 What are our predictors? Date, weather data, home game schedules, 14-day lags at other stations. 
-]
 
 ]
 
+.pull-right-a-little[
+
+```{r chicago-train, echo = FALSE, out.width = "100%", fig.align="center"}
+knitr::include_graphics("images/chicago.png")
+```
+
+]
+
+---
+
+# Our steps
+
+- Identify existing and compute new features to use in the model
+
+- Identify which _type_ model to use, and what _engine_ to run it with
+
+- Bundle the above two ideas into a _workflow_
+
+- Fit the workflow once
+
+- Fit the workflow multiple times using _resamples_
+
+- Tune the workflow
 
 ---
 
@@ -504,29 +591,39 @@ chicago_rec <- recipe(ridership ~ ., data = Chicago) %>%
 #?  step_mutate(temp = (32 * temp − 32) * 5 / 9 ) #<<
 ```
 
-<br><br>
+---
 
-***Let's fit a linear regression model!***
+# What are our _features_? `r I(hexes(c("recipes")))`
 
-With `parsnip`, we first create an object that specifies the _type_ of model and then the software _engine_ to do the fit. 
+```{r chicago-recipe-final}
+chicago_rec <- recipe(ridership ~ ., data = Chicago) %>% 
+  step_date(date, features = c("dow", "month", "year")) %>% 
+  step_holiday(date) %>% 
+  update_role(date, new_role = "id") %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) 
+```
 
 ---
 
 # Linear regression specification `r I(hexes(c("parsnip")))`
 
-
 .pull-left-a-lot[
+
+"Let's fit a model with a numeric outcome, an intercept, and slopes for each predictor."
 
 ```{r parsnip-lm-spec}
 linear_mod <- linear_reg() 
+linear_mod
 ```
 
-This says "Let's fit a model with a numeric outcome, and intercept, and slopes for each predictor."
+]
 
-* Other model types include `nearest_neighbors()`, `decision_tree()`, `rand_forest()`, `arima_reg()`, and so on.
+.pull-right-a-little[
 
+- Other model types include `nearest_neighbors()`, `decision_tree()`, `rand_forest()`, `arima_reg()`, and so on.
 
-The `set_engine()` function gives the details on _how_ it should be fit. 
+- An additional `set_engine()` function gives the details on _how_ it should be fit. 
 
 ]
 
@@ -534,15 +631,15 @@ The `set_engine()` function gives the details on _how_ it should be fit.
 
 # Let's fit it with... `r I(hexes(c("parsnip")))`
 
-
 .pull-left-a-lot[
 
 ```{r parsnip-lm}
-linear_mod <- linear_reg() %>% set_engine("lm")
-
+linear_mod <- linear_reg() %>% 
+  set_engine("lm")
 ```
 
 ]
+
 .pull-right-a-little[
 
 ```{r parsnip-lm-nope, echo = FALSE, out.width = "100%", fig.align="center"}
@@ -550,8 +647,6 @@ knitr::include_graphics("images/drake-nope.png")
 ```
 
 ]
-
-
 
 ---
 
@@ -561,11 +656,12 @@ knitr::include_graphics("images/drake-nope.png")
 .pull-left-a-lot[
 
 ```{r parsnip-keras}
-linear_mod <- linear_reg() %>% set_engine("keras")
-
+linear_mod <- linear_reg() %>% 
+  set_engine("keras")
 ```
 
 ]
+
 .pull-right-a-little[
 
 ```{r parsnip-keras-nope, echo = FALSE, out.width = "100%", fig.align="center"}
@@ -573,7 +669,6 @@ knitr::include_graphics("images/drake-nope.png")
 ```
 
 ]
-
 
 ---
 
@@ -583,11 +678,12 @@ knitr::include_graphics("images/drake-nope.png")
 .pull-left-a-lot[
 
 ```{r parsnip-spark}
-linear_mod <- linear_reg() %>% set_engine("spark")
-
+linear_mod <- linear_reg() %>% 
+  set_engine("spark")
 ```
 
 ]
+
 .pull-right-a-little[
 
 ```{r parsnip-spark-nope, echo = FALSE, out.width = "100%", fig.align="center"}
@@ -596,20 +692,19 @@ knitr::include_graphics("images/drake-nope.png")
 
 ]
 
-
 ---
 
 # Let's fit it with... `r I(hexes(c("parsnip")))`
 
-
 .pull-left-a-lot[
 
 ```{r parsnip-stan}
-linear_mod <- linear_reg() %>% set_engine("stan")
-
+linear_mod <- linear_reg() %>% 
+  set_engine("stan")
 ```
 
 ]
+
 .pull-right-a-little[
 
 ```{r parsnip-stan-nope, echo = FALSE, out.width = "100%", fig.align="center"}
@@ -618,22 +713,19 @@ knitr::include_graphics("images/drake-nope.png")
 
 ]
 
-
 ---
 
 # Let's fit it with... `r I(hexes(c("parsnip")))`
 
-
 .pull-left-a-lot[
 
 ```{r parsnip-glmnet}
-linear_mod <- 
-  linear_reg() %>% 
+linear_mod <- linear_reg() %>% 
   set_engine("glmnet")
-
 ```
 
 ]
+
 .pull-right-a-little[
 
 ```{r parsnip-glmnet-yep, echo = FALSE, out.width = "100%", fig.align="center"}
@@ -641,7 +733,6 @@ knitr::include_graphics("images/drake-yep.png")
 ```
 
 ]
-
 
 ---
 
@@ -651,8 +742,7 @@ knitr::include_graphics("images/drake-yep.png")
 .pull-left-a-lot[
 
 ```{r parsnip-glmnet-param}
-linear_mod <- 
-  linear_reg(penalty = 0.1, mixture = 0.5) %>% 
+linear_mod <- linear_reg(penalty = 0.1, mixture = 0.5) %>% 
   set_engine("glmnet")
 
 ```
@@ -670,44 +760,47 @@ knitr::include_graphics("images/drake-yep.png")
 library(glmnet)
 library(stats)
 ```
+
 ---
 
 # A modeling _workflow_ `r I(hexes(c("parsnip", "recipes", "workflows")))`
 
-We can _optionally_ bundle the recipe and model together into a <span style="color:LightGray;"><strike>pipeline</strike></span> _workflow_:
+We can _optionally_ bundle the recipe and model together into a _workflow_:
 
 ```{r workflow}
-glmnet_wflow <- 
-  workflow() %>% 
-  add_model(linear_mod) %>% 
-  add_recipe(chicago_rec) # or add_formula() or add_variables()
+glmnet_wflow <- workflow() %>%
+  add_recipe(chicago_rec) %>% # or add_formula() or add_variables()
+  add_model(linear_mod)
 ```
 
 Fitting and prediction are very easy:
-
 
 ```{r workflow-fit}
 glmnet_fit <- fit(glmnet_wflow, data = Chicago)
 predict(glmnet_fit, Chicago %>% slice(1:7))
 ```
 
+---
 
+# A modeling _workflow_ `r I(hexes(c("parsnip", "recipes", "workflows")))`
+
+```{r workflow-print}
+glmnet_fit
+```
 
 ---
 
 # Model tuning `r I(hexes(c("parsnip", "recipes", "workflows", "tune")))`
 
-We probably don't have a good idea for what `penalty` and `mixture` should be? 
+We probably don't have a good idea for what `penalty` and `mixture` should be
 
-We can _mark them for tuning_ :
+We can _mark them for tuning_:
 
 ```{r tuning}
-linear_mod <- 
-  linear_reg(penalty = tune(), mixture = tune()) %>% 
+linear_mod <- linear_reg(penalty = tune(), mixture = tune()) %>% 
   set_engine("glmnet")
 
-glmnet_wflow <- 
-  glmnet_wflow %>% 
+glmnet_wflow <- glmnet_wflow %>% 
   update_model(linear_mod)
 ```
 
@@ -723,44 +816,36 @@ We'll use time series resampling and grid search to optimize the model:
 
 .pull-left[
 
-
-
 ```{r rs}
-chicago_rs <- 
-  sliding_period(
-    Chicago,
-    date,
-    period = "month",
-    lookback = 14 * 12,
-    assess_stop = 1
-  )
-chicago_rs
+chicago_rs <- sliding_period(
+  Chicago,
+  date,
+  period = "month",
+  lookback = 14 * 12,
+  assess_stop = 1
+)
+
+print(chicago_rs, n = 6)
 ```
 ]
 
-
 .pull-right[
 
-
-```{r grid, message = FALSE, warning = FALSE}
+```{r grid, message = FALSE, warning = FALSE, cache=TRUE}
 library(doMC)
 registerDoMC(cores = parallel::detectCores())
 
 set.seed(1)
-glmnet_tune <- 
-  glmnet_wflow %>% 
+
+glmnet_tune <- glmnet_wflow %>% 
   tune_grid(chicago_rs, grid = 25)
 
 show_best(glmnet_tune, metric = "rmse")
-
 ```
 
 ]
 
-
 ]
-
-
 
 ---
 
@@ -780,6 +865,7 @@ theme_set(thm)
 
 
 .pull-left[
+
 Grid points using the default space-filling design:
 
 ```{r plot-grid, echo = FALSE, fig.width=5, fig.height=5,  out.width = '80%', fig.align='center', dev = 'svg', dev.args = list(bg = "transparent")}
@@ -789,14 +875,18 @@ glmnet_tune %>%
   ggplot(aes(x = mixture, y = penalty)) + 
   geom_point() + 
   scale_y_log10() + 
-  labs(x = "Proportion of lasso Penalty", y = "Amount of Regularization") +
+  labs(x = "Proportion of lasso Penalty (mixture)", y = "Amount of Regularization (penalty, log10)") +
   xlim(0:1)
 ```
+
 ]
+
 .pull-right[
+
 ```{r plot-grid-res, fig.width=5, fig.height=5,  out.width = '80%', fig.align='center', dev = 'svg', dev.args = list(bg = "transparent")}
-autoplot(glmnet_tune)
+ggplot2::autoplot(glmnet_tune)
 ```
+
 ]
 
 
@@ -804,39 +894,43 @@ autoplot(glmnet_tune)
 
 # Next steps
 
-There are functions to plot the results, substitute the best parameters for the `tune()` placeholders, fit the final model, measure the test set performance, etc etc. 
+There are functions to:
 
-These API's focus on harmonizing _Existing_ packages.
+- Plot the results
 
-(If we still have time) Let's talk about designing better packages.
+- Substitute the best parameters for the `tune()` placeholders
 
+- Fit the final model
 
+- Measure the test set performance 
+
+These APIs focus on harmonizing _existing_ packages (i.e. the retrospective approach).
 
 ---
 
 # Principles of Modeling Packages
 
-.font90[
 We have [a set of _guidelines_](https://tidymodels.github.io/model-implementation-principles/) for making good modeling packages. For example:
 
- * Separate the interface that the **modeler** uses from the code to do the computations. They serve two very different purposes. 
- * Have multiple interfaces (e.g. formula, x/y, etc). 
- * The _user-facing interface_ should use the most appropriate data structures for the data (as opposed to the computations). For example, factor outcomes versus 0/1 indicators and data frames versus matrices. 
- * `type = "prob"` for class probabilities `r emojifont::emoji('smile')`. 
- * Use S3 methods.  
- * The `predict` method should give standardized, predictable results. 
+* Have multiple interfaces (e.g. formula, x/y, recipe, etc). 
 
-Rather than try to make methodologists into software developers, have tools to **help them create high quality modeling packages**. 
+* The _user-facing interface_ should use the most appropriate data structures for the data (as opposed to the computations). For example, factor outcomes versus 0/1 indicators and data frames versus matrices.
 
-]
+* Separate the interface that the **modeler** uses from the code to do the computations.
+
+* The `predict()` method should give standardized, predictable results. Standardized prediction types (`type = "prob"` for class probabilities `r emojifont::emoji('smile')`). 
+
+Rather than try to make method designers into software developers, have tools to **help them create high quality modeling packages**.
 
 ---
 
-# Making better packages `r I(hexes(c("hardhat")))`
+# Making better packages with hardhat `r I(hexes(c("hardhat")))`
 
-We have methods for creating all of the S3 scaffolding for modeling packages. 
+Ever used `usethis::create_package()`? 
 
-You have some functions for creating a model fit; `hardhat` provides a package directory using best practices: 
+On the modeling side we have `hardhat::create_modeling_package()`.
+
+This generates opinionated scaffolding for new modeling packages.
 
 ```{r hardhat, eval = FALSE}
 library(hardhat)
@@ -844,27 +938,29 @@ library(hardhat)
 create_modeling_package("~/tmp/lantern", model = "lantern_mlp")
 ```
 
+The result is a "working" user interface that you can plug your implementation code into.
+
 There is a [video demo](https://canal.uned.es/video/5dd25b9f5578f275e407dd88) that shows how to create a package in 9 steps.
 
-
 ---
+
 # What's coming up
 
-### MLOps
+### ML Ops
 
 Model Operations tools for deploying, monitoring, and updating models.
 
-### censored data models (a.k.a survival analysis)
+### Censored data models (a.k.a survival analysis)
 
 These models are used to predict time-to-event data (in medicine, sports, HR, etc).
 
 ### Case weights
 
-Not sexy. Really tedious. Often requested.  This will impact many of the tidymodels packages.
+Tedious, but often requested. This will impact many of the tidymodels packages.
 
-### Supervise feature selection
+### Supervised feature selection
 
-Via recipe steps and other functions (e.g., `rfe()`).
+Via recipe steps and other functions (e.g., backwards feature selection).
 
 ---
 
@@ -872,11 +968,10 @@ Via recipe steps and other functions (e.g., `rfe()`).
 
 Thanks for the invitation to speak today!
 
-The tidymodels team: Davis Vaughan, Julia Silge, and Hanna Frick. 
+The tidymodels team: Max Kuhn, Julia Silge, and Hannah Frick. 
 
-Special thanks for the other folks who contributed so much to tidymodels: Edgar Ruiz, Emil Hvitfeldt, Alison Hill, Desirée De Leon, and the tidyverse team.
+Special thanks to other tidymodels contributors: Edgar Ruiz, Emil Hvitfeldt, Alison Hill, Desirée De Leon, and the tidyverse team.
 
 These slides were made with the [`xaringan`](https://bookdown.org/yihui/rmarkdown/xaringan.html) package and styled by Alison Hill. 
 
-Sources are located at [`github.com/topepo/an-introduction-to-tidymodels`](https://github.com/topepo/an-introduction-to-tidymodels). 
-
+Sources are located at [`github.com/DavisVaughan/an-introduction-to-tidymodels`](https://github.com/DavisVaughan/an-introduction-to-tidymodels).
