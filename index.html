@@ -34,7 +34,7 @@ background-color: #F9F8F3
 
 .pull-left[
 
-## ~~Horrify~~ Enlighten you
+## ~~Horrify~~ Teach you
 
 - Point out weaknesses in the current state of affairs
 
@@ -122,19 +122,15 @@ Syntax for computing predicted class probabilities:
  
 The `glmnet` model can be used to fit regularized generalized linear models with a mixture of L&lt;sub&gt;1&lt;/sub&gt; and L&lt;sub&gt;2&lt;/sub&gt; penalties. 
 
-We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values. 
-
-The models shown below contain solutions for three regularization values ( `\(\lambda\)` ). 
-
-The predict method gives the results for all three at once (👍). 
-
+We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values.
 
 ---
 
 # Numeric `glmnet` Predictions
 
-Predicting a numeric outcome for two new data points:
+The models shown below contain solutions for 3 regularization values ( `\(\lambda\)` ), `0.01`, `0.1`, and `1`.
 
+The predict method gives the results for all three at once (👍).
 
 
 ```r
@@ -158,7 +154,6 @@ predict(reg_mod, newx = new_x)
 ```
 
 A matrix result and we will assume that the `\(\lambda\)` values are in the same order as what we gave to the model fit function.
-
 
 ---
 # `glmnet` predictions formats
@@ -192,9 +187,7 @@ A matrix result and we will assume that the `\(\lambda\)` values are in the same
 
 .pull-left-a-lot[
 
-😳
-
-Most people have at least four different scripts for the same model
+Most people have at least four different scripts for the same model 😳
 
 &gt; _Am I working for `glmnet` or is it is working for me?_
 
@@ -272,29 +265,36 @@ background-size: contain
 
 The [tidyverse](http://www.tidyverse.org/) is an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures. 
 
+]
+.pull-right[
 
-The principles of the tidyverse: 
+__The principles of the tidyverse:__
 
 1. Reuse existing data structures.
 1. Compose simple functions with the pipe.
 1. Embrace functional programming.
 1. Design for humans.
 
-This results in more specific conventions around interfaces, function naming, etc. 
+] 
 
-]
-.pull-right[
+---
 
-There is also the notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf): 
+# Tidyverse
+
+.pull-left[
+
+__The notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf):__ 
 
 1. Each variable forms a column.
 1. Each observation forms a row.
 1. Each type of observational unit forms a table.
 
+]
+.pull-right[
+
 Based on these ideas, we can create modeling packages that have predictable results and are a pleasure to use. 
 
 ] 
-
 
 ---
 
@@ -366,14 +366,14 @@ library(tidymodels)
 ```
 
 ```
-## ✓ broom        0.7.9          ✓ recipes      0.1.17    
-## ✓ dials        0.0.10         ✓ rsample      0.1.0     
-## ✓ dplyr        1.0.7.9000     ✓ tibble       3.1.5     
-## ✓ ggplot2      3.3.5          ✓ tidyr        1.1.4     
-## ✓ infer        1.0.0          ✓ tune         0.1.6.9000
-## ✓ modeldata    0.1.1          ✓ workflows    0.2.3.9000
-## ✓ parsnip      0.1.7.900      ✓ workflowsets 0.1.0.9000
-## ✓ purrr        0.3.4          ✓ yardstick    0.0.8
+## ✓ broom        0.7.9           ✓ recipes      0.1.17     
+## ✓ dials        0.0.10.9000     ✓ rsample      0.1.0      
+## ✓ dplyr        1.0.7           ✓ tibble       3.1.5      
+## ✓ ggplot2      3.3.5           ✓ tidyr        1.1.4      
+## ✓ infer        1.0.0           ✓ tune         0.1.6.9000 
+## ✓ modeldata    0.1.1           ✓ workflows    0.2.3.9000 
+## ✓ parsnip      0.1.7.900       ✓ workflowsets 0.1.0.9000 
+## ✓ purrr        0.3.4           ✓ yardstick    0.0.8
 ```
 
 ```
@@ -382,7 +382,7 @@ library(tidymodels)
 ## x purrr::discard()   masks scales::discard()
 ## x tidyr::extract()   masks magrittr::extract()
 ## x purrr::set_names() masks magrittr::set_names()
-## • Use suppressPackageStartupMessages() to eliminate package startup messages
+## • Dig deeper into tidy modeling with R at https://www.tmwr.org
 ```
 
 ```r
@@ -464,7 +464,7 @@ tidymodels_prefer(quiet = FALSE)
 
 .pull-left-a-lot[
 
-Let's start by predicting the [ridership of the Chicago "L" trains](https://bookdown.org/max/FES/chicago-intro.html). 
+Let's start by predicting the _ridership_ of the [Chicago "L" trains](https://bookdown.org/max/FES/chicago-intro.html). 
 
 We have data over 5,698 days between 2001 and 2016 in `data(Chicago, package = "modeldata")`.
 
@@ -484,7 +484,7 @@ What are our predictors? Date, weather data, home game schedules, 14-day lags at
 
 - Identify existing and compute new features to use in the model
 
-- Identify which _type_ model to use, and what _engine_ to run it with
+- Identify which _type_ of model to use, and what _engine_ to run it with
 
 - Bundle the above two ideas into a _workflow_
 
@@ -557,9 +557,9 @@ chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;%
 
 Other selectors are:
 
- * `all_nominal()`, `all_numeric()`, and `has_type()`
+ * `all_predictors()`, `all_numeric_predictors()`, and `all_outcomes()`
  
- * `all_predictors()`, `all_outcomes()`, and `has_role()`
+ * `has_type()` and `has_role()`
  
  * Standard `dplyr` selectors like `starts_with()` and so on. 
 
@@ -592,26 +592,8 @@ chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;%
   step_dummy(all_nominal_predictors()) %&gt;% 
   step_normalize(all_numeric_predictors()) 
 
-*#?  step_pca(one_of(stations), num_comp = 10)
+*#?  step_pca(all_of(stations), num_comp = 10)
 ```
-
-
----
-
-# What are our _features_? &lt;img src="images/recipes.svg" class="title-hex"&gt;&lt;img src="images/embed.svg" class="title-hex"&gt;
-
-
-```r
-chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;% 
-  step_date(date, features = c("dow", "month", "year")) %&gt;% 
-  step_holiday(date) %&gt;% 
-  update_role(date, new_role = "id") %&gt;% 
-  step_dummy(all_nominal_predictors()) %&gt;% 
-  step_normalize(all_numeric_predictors()) 
-
-*#?  step_umap(one_of(stations), outcome = vars(ridership), num_comp = 10)
-```
-
 
 ---
 
@@ -685,7 +667,7 @@ linear_mod
 
 - Other model types include `nearest_neighbors()`, `decision_tree()`, `rand_forest()`, `arima_reg()`, and so on.
 
-- An additional `set_engine()` function gives the details on _how_ it should be fit. 
+- An additional `set_engine()` function lets you adjust the _engine_ (backend) to fit with.
 
 ]
 
@@ -830,21 +812,21 @@ Fitting and prediction are very easy:
 
 
 ```r
-glmnet_fit &lt;- fit(glmnet_wflow, data = Chicago)
-predict(glmnet_fit, Chicago %&gt;% slice(1:7))
+chicago_train &lt;- slice(Chicago, seq(1L, n() - 4))
+chicago_test &lt;- slice(Chicago, seq(n() - 3, n()))
+
+glmnet_fit &lt;- fit(glmnet_wflow, data = chicago_train)
+predict(glmnet_fit, chicago_test)
 ```
 
 ```
-## # A tibble: 7 × 1
+## # A tibble: 4 × 1
 ##   .pred
 ##   &lt;dbl&gt;
-## 1 13.8 
-## 2 15.0 
-## 3 14.7 
-## 4 14.6 
-## 5 14.1 
-## 6  2.36
-## 7  1.73
+## 1 21.0 
+## 2 19.7 
+## 3  7.88
+## 4  7.57
 ```
 
 ---
@@ -885,37 +867,37 @@ glmnet_fit
 ## 9  18 57.8   5.51
 ## 10 18 61.0   5.02
 ## 11 19 63.8   4.57
-## 12 19 66.1   4.17
+## 12 19 66.0   4.17
 ## 13 19 68.0   3.80
 ## 14 19 69.6   3.46
-## 15 18 71.0   3.15
+## 15 18 70.9   3.15
 ## 16 18 72.1   2.87
 ## 17 18 73.0   2.62
-## 18 17 73.8   2.39
+## 18 17 73.8   2.38
 ## 19 17 74.6   2.17
 ## 20 17 75.3   1.98
-## 21 17 75.9   1.80
+## 21 17 75.8   1.80
 ## 22 17 76.3   1.64
 ## 23 17 76.7   1.50
 ## 24 17 77.1   1.36
 ## 25 18 77.4   1.24
-## 26 17 77.8   1.13
+## 26 16 77.8   1.13
 ## 27 16 78.2   1.03
 ## 28 16 78.6   0.94
 ## 29 16 78.9   0.86
 ## 30 16 79.2   0.78
 ## 31 16 79.4   0.71
-## 32 18 79.7   0.65
+## 32 17 79.6   0.65
 ## 33 16 79.9   0.59
 ## 34 19 80.1   0.54
-## 35 21 80.3   0.49
+## 35 22 80.3   0.49
 ## 36 23 80.6   0.45
-## 37 26 81.0   0.41
-## 38 26 81.9   0.37
+## 37 26 80.9   0.41
+## 38 26 81.8   0.37
 ## 39 25 82.6   0.34
 ## 40 27 83.3   0.31
-## 41 27 84.0   0.28
-## 42 29 84.7   0.26
+## 41 28 84.0   0.28
+## 42 30 84.7   0.26
 ## 43 30 85.3   0.23
 ## 44 31 85.8   0.21
 ## 45 29 86.3   0.19
@@ -938,21 +920,24 @@ We can _mark them for tuning_:
 linear_mod &lt;- linear_reg(penalty = tune(), mixture = tune()) %&gt;% 
   set_engine("glmnet")
 
-glmnet_wflow &lt;- glmnet_wflow %&gt;% 
-  update_model(linear_mod)
+glmnet_wflow &lt;- workflow() %&gt;%
+  add_recipe(chicago_rec) %&gt;%
+  add_model(linear_mod)
 ```
 
-Recipe arguments can also be simultaneously tuned (e.g. `num_comp` in `step_pca()`). 
+Recipe arguments can also be simultaneously tuned, i.e.:
+
+
+```r
+recipe() %&gt;%
+  step_pca(num_comp = tune())
+```
 
 ---
 
 # Resampling and grid search &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/rsample.svg" class="title-hex"&gt;
 
 We'll use time series resampling and grid search to optimize the model:
-
-.code80[ 
-
-.pull-left[
 
 
 ```r
@@ -980,13 +965,88 @@ print(chicago_rs, n = 6)
 ## 6 &lt;split [5143/31]&gt; Slice06
 ## # … with 13 more rows
 ```
+
+---
+
+# Resampling and grid search &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/rsample.svg" class="title-hex"&gt;
+
+.code80[
+
+What's in a split?
+
+.pull-left[
+
+
+```r
+split &lt;- chicago_rs$splits[[1]]
+split
+```
+
+```
+## &lt;Analysis/Assess/Total&gt;
+## &lt;5123/28/5698&gt;
+```
+
+```r
+print(analysis(split), n = 3)
+```
+
+```
+## # A tibble: 5,123 × 50
+##   ridership Austin Quincy_Wells Belmont Archer_35th Oak_Park Western Clark_Lake
+##       &lt;dbl&gt;  &lt;dbl&gt;        &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+## 1      15.7   1.46         8.37    4.60        2.01     1.42    3.32       15.6
+## 2      15.8   1.50         8.35    4.72        2.09     1.43    3.34       15.7
+## 3      15.9   1.52         8.36    4.68        2.11     1.49    3.36       15.6
+## # … with 5,120 more rows, and 42 more variables: Clinton &lt;dbl&gt;,
+## #   Merchandise_Mart &lt;dbl&gt;, Irving_Park &lt;dbl&gt;, Washington_Wells &lt;dbl&gt;,
+## #   Harlem &lt;dbl&gt;, Monroe &lt;dbl&gt;, Polk &lt;dbl&gt;, Ashland &lt;dbl&gt;, Kedzie &lt;dbl&gt;,
+## #   Addison &lt;dbl&gt;, Jefferson_Park &lt;dbl&gt;, Montrose &lt;dbl&gt;, California &lt;dbl&gt;,
+## #   temp_min &lt;dbl&gt;, temp &lt;dbl&gt;, temp_max &lt;dbl&gt;, temp_change &lt;dbl&gt;, dew &lt;dbl&gt;,
+## #   humidity &lt;dbl&gt;, pressure &lt;dbl&gt;, pressure_change &lt;dbl&gt;, wind &lt;dbl&gt;,
+## #   wind_max &lt;dbl&gt;, gust &lt;dbl&gt;, gust_max &lt;dbl&gt;, percip &lt;dbl&gt;, …
+```
+
 ]
 
 .pull-right[
 
 
 ```r
+print(assessment(split), n = 3)
+```
+
+```
+## # A tibble: 28 × 50
+##   ridership Austin Quincy_Wells Belmont Archer_35th Oak_Park Western Clark_Lake
+##       &lt;dbl&gt;  &lt;dbl&gt;        &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+## 1      3.47  0.706         1.17    2.42        1.05    0.526    1.24       5.15
+## 2     14.0   1.22          4.79    4.05        1.94    1.03     2.54      10.7 
+## 3     20.5   2.12          8.22    5.52        3.28    1.94     4.04      20.1 
+## # … with 25 more rows, and 42 more variables: Clinton &lt;dbl&gt;,
+## #   Merchandise_Mart &lt;dbl&gt;, Irving_Park &lt;dbl&gt;, Washington_Wells &lt;dbl&gt;,
+## #   Harlem &lt;dbl&gt;, Monroe &lt;dbl&gt;, Polk &lt;dbl&gt;, Ashland &lt;dbl&gt;, Kedzie &lt;dbl&gt;,
+## #   Addison &lt;dbl&gt;, Jefferson_Park &lt;dbl&gt;, Montrose &lt;dbl&gt;, California &lt;dbl&gt;,
+## #   temp_min &lt;dbl&gt;, temp &lt;dbl&gt;, temp_max &lt;dbl&gt;, temp_change &lt;dbl&gt;, dew &lt;dbl&gt;,
+## #   humidity &lt;dbl&gt;, pressure &lt;dbl&gt;, pressure_change &lt;dbl&gt;, wind &lt;dbl&gt;,
+## #   wind_max &lt;dbl&gt;, gust &lt;dbl&gt;, gust_max &lt;dbl&gt;, percip &lt;dbl&gt;, …
+```
+
+]
+
+]
+
+
+---
+
+# Resampling and grid search &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/rsample.svg" class="title-hex"&gt;
+
+We'll use time series resampling and grid search to optimize the model:
+
+
+```r
 library(doMC)
+# Or `doFuture::registerDoFuture()`
 registerDoMC(cores = parallel::detectCores())
 
 set.seed(1)
@@ -1007,10 +1067,6 @@ show_best(glmnet_tune, metric = "rmse")
 ## 4 4.89e- 9   0.794 rmse    standard    2.05    19   0.196 Preprocessor1_Model20
 ## 5 4.81e- 5   0.987 rmse    standard    2.05    19   0.196 Preprocessor1_Model25
 ```
-
-]
-
-]
 
 ---
 
@@ -1053,7 +1109,13 @@ There are functions to:
 
 - Measure the test set performance 
 
+---
+
+# Retrospective vs Prospective
+
 These APIs focus on harmonizing _existing_ packages (i.e. the retrospective approach).
+
+Ideally, package authors would create packages adhering to a set of principles which match our expectations as R users, and make it easy to incorporate their packages into the tidymodels ecosystem.
 
 ---
 
@@ -1061,13 +1123,13 @@ These APIs focus on harmonizing _existing_ packages (i.e. the retrospective appr
 
 We have [a set of _guidelines_](https://tidymodels.github.io/model-implementation-principles/) for making good modeling packages. For example:
 
-* Have multiple interfaces (e.g. formula, x/y, recipe, etc). 
+* Support multiple expected interfaces (e.g. formula, x/y, recipe, etc). 
 
-* The _user-facing interface_ should use the most appropriate data structures for the data (as opposed to the computations). For example, factor outcomes versus 0/1 indicators and data frames versus matrices.
+* The _user-facing interface_ should use the most intuitive data structures for the data (as opposed to the computations). For example, allowing factor outcomes versus requiring 0/1 indicators and data frames versus matrices.
 
 * Separate the interface that the **modeler** uses from the code to do the computations.
 
-* The `predict()` method should give standardized, predictable results. Standardized prediction types (`type = "prob"` for class probabilities 😄). 
+* The `predict()` method should produce standardized, predictable results, generated by a standardized `type` (i.e. `type = "prob"` for class probabilities 😄). 
 
 Rather than try to make method designers into software developers, have tools to **help them create high quality modeling packages**.
 

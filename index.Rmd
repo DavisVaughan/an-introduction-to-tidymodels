@@ -59,7 +59,7 @@ hexes <- function(x) {
 
 .pull-left[
 
-## ~~Horrify~~ Enlighten you
+## ~~Horrify~~ Teach you
 
 - Point out weaknesses in the current state of affairs
 
@@ -207,19 +207,15 @@ three_pred <- tibble::as_tibble(three_pred)
  
 The `glmnet` model can be used to fit regularized generalized linear models with a mixture of L<sub>1</sub> and L<sub>2</sub> penalties. 
 
-We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values. 
-
-The models shown below contain solutions for three regularization values ( $\lambda$ ). 
-
-The predict method gives the results for all three at once (`r emojifont::emoji('+1')`). 
-
+We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values.
 
 ---
 
 # Numeric `glmnet` Predictions
 
-Predicting a numeric outcome for two new data points:
+The models shown below contain solutions for 3 regularization values ( $\lambda$ ), `0.01`, `0.1`, and `1`.
 
+The predict method gives the results for all three at once (`r emojifont::emoji('+1')`).
 
 ```{r glmnet-reg}
 new_x
@@ -228,7 +224,6 @@ predict(reg_mod, newx = new_x)
 ```
 
 A matrix result and we will assume that the $\lambda$ values are in the same order as what we gave to the model fit function.
-
 
 ---
 # `glmnet` predictions formats
@@ -262,9 +257,7 @@ A matrix result and we will assume that the $\lambda$ values are in the same ord
 
 .pull-left-a-lot[
 
-`r emojifont::emoji('flushed')`
-
-Most people have at least four different scripts for the same model
+Most people have at least four different scripts for the same model `r emojifont::emoji('flushed')`
 
 > _Am I working for `glmnet` or is it is working for me?_
 
@@ -324,29 +317,36 @@ background-size: contain
 
 The [tidyverse](http://www.tidyverse.org/) is an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures. 
 
+]
+.pull-right[
 
-The principles of the tidyverse: 
+__The principles of the tidyverse:__
 
 1. Reuse existing data structures.
 1. Compose simple functions with the pipe.
 1. Embrace functional programming.
 1. Design for humans.
 
-This results in more specific conventions around interfaces, function naming, etc. 
+] 
 
-]
-.pull-right[
+---
 
-There is also the notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf): 
+# Tidyverse
+
+.pull-left[
+
+__The notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf):__ 
 
 1. Each variable forms a column.
 1. Each observation forms a row.
 1. Each type of observational unit forms a table.
 
+]
+.pull-right[
+
 Based on these ideas, we can create modeling packages that have predictable results and are a pleasure to use. 
 
 ] 
-
 
 ---
 
@@ -418,7 +418,7 @@ tidymodels_prefer(quiet = FALSE)
 
 .pull-left-a-lot[
 
-Let's start by predicting the [ridership of the Chicago "L" trains](https://bookdown.org/max/FES/chicago-intro.html). 
+Let's start by predicting the _ridership_ of the [Chicago "L" trains](https://bookdown.org/max/FES/chicago-intro.html). 
 
 We have data over 5,698 days between 2001 and 2016 in `data(Chicago, package = "modeldata")`.
 
@@ -440,7 +440,7 @@ knitr::include_graphics("images/chicago.png")
 
 - Identify existing and compute new features to use in the model
 
-- Identify which _type_ model to use, and what _engine_ to run it with
+- Identify which _type_ of model to use, and what _engine_ to run it with
 
 - Bundle the above two ideas into a _workflow_
 
@@ -508,9 +508,9 @@ chicago_rec <- recipe(ridership ~ ., data = Chicago) %>%
 
 Other selectors are:
 
- * `all_nominal()`, `all_numeric()`, and `has_type()`
+ * `all_predictors()`, `all_numeric_predictors()`, and `all_outcomes()`
  
- * `all_predictors()`, `all_outcomes()`, and `has_role()`
+ * `has_type()` and `has_role()`
  
  * Standard `dplyr` selectors like `starts_with()` and so on. 
 
@@ -541,25 +541,8 @@ chicago_rec <- recipe(ridership ~ ., data = Chicago) %>%
   step_dummy(all_nominal_predictors()) %>% 
   step_normalize(all_numeric_predictors()) 
 
-#?  step_pca(one_of(stations), num_comp = 10) #<<
+#?  step_pca(all_of(stations), num_comp = 10) #<<
 ```
-
-
----
-
-# What are our _features_? `r I(hexes(c("embed", "recipes")))`
-
-```{r chicago-recipe-umap}
-chicago_rec <- recipe(ridership ~ ., data = Chicago) %>% 
-  step_date(date, features = c("dow", "month", "year")) %>% 
-  step_holiday(date) %>% 
-  update_role(date, new_role = "id") %>% 
-  step_dummy(all_nominal_predictors()) %>% 
-  step_normalize(all_numeric_predictors()) 
-
-#?  step_umap(one_of(stations), outcome = vars(ridership), num_comp = 10) #<<
-```
-
 
 ---
 
@@ -623,7 +606,7 @@ linear_mod
 
 - Other model types include `nearest_neighbors()`, `decision_tree()`, `rand_forest()`, `arima_reg()`, and so on.
 
-- An additional `set_engine()` function gives the details on _how_ it should be fit. 
+- An additional `set_engine()` function lets you adjust the _engine_ (backend) to fit with.
 
 ]
 
@@ -776,8 +759,11 @@ glmnet_wflow <- workflow() %>%
 Fitting and prediction are very easy:
 
 ```{r workflow-fit}
-glmnet_fit <- fit(glmnet_wflow, data = Chicago)
-predict(glmnet_fit, Chicago %>% slice(1:7))
+chicago_train <- slice(Chicago, seq(1L, n() - 4))
+chicago_test <- slice(Chicago, seq(n() - 3, n()))
+
+glmnet_fit <- fit(glmnet_wflow, data = chicago_train)
+predict(glmnet_fit, chicago_test)
 ```
 
 ---
@@ -800,21 +786,23 @@ We can _mark them for tuning_:
 linear_mod <- linear_reg(penalty = tune(), mixture = tune()) %>% 
   set_engine("glmnet")
 
-glmnet_wflow <- glmnet_wflow %>% 
-  update_model(linear_mod)
+glmnet_wflow <- workflow() %>%
+  add_recipe(chicago_rec) %>%
+  add_model(linear_mod)
 ```
 
-Recipe arguments can also be simultaneously tuned (e.g. `num_comp` in `step_pca()`). 
+Recipe arguments can also be simultaneously tuned, i.e.:
+
+```{r tuning-recipe, eval=FALSE}
+recipe() %>%
+  step_pca(num_comp = tune())
+```
 
 ---
 
 # Resampling and grid search `r I(hexes(c("rsample", "tune")))`
 
 We'll use time series resampling and grid search to optimize the model:
-
-.code80[ 
-
-.pull-left[
 
 ```{r rs}
 chicago_rs <- sliding_period(
@@ -827,12 +815,46 @@ chicago_rs <- sliding_period(
 
 print(chicago_rs, n = 6)
 ```
+
+---
+
+# Resampling and grid search `r I(hexes(c("rsample", "tune")))`
+
+.code80[
+
+What's in a split?
+
+.pull-left[
+
+```{r rs-show-left}
+split <- chicago_rs$splits[[1]]
+split
+
+print(analysis(split), n = 3)
+```
+
 ]
 
 .pull-right[
 
+```{r rs-show-right}
+print(assessment(split), n = 3)
+```
+
+]
+
+]
+
+
+---
+
+# Resampling and grid search `r I(hexes(c("rsample", "tune")))`
+
+We'll use time series resampling and grid search to optimize the model:
+
 ```{r grid, message = FALSE, warning = FALSE, cache=TRUE}
 library(doMC)
+# Or `doFuture::registerDoFuture()`
 registerDoMC(cores = parallel::detectCores())
 
 set.seed(1)
@@ -842,10 +864,6 @@ glmnet_tune <- glmnet_wflow %>%
 
 show_best(glmnet_tune, metric = "rmse")
 ```
-
-]
-
-]
 
 ---
 
@@ -904,7 +922,13 @@ There are functions to:
 
 - Measure the test set performance 
 
+---
+
+# Retrospective vs Prospective
+
 These APIs focus on harmonizing _existing_ packages (i.e. the retrospective approach).
+
+Ideally, package authors would create packages adhering to a set of principles which match our expectations as R users, and make it easy to incorporate their packages into the tidymodels ecosystem.
 
 ---
 
@@ -912,13 +936,13 @@ These APIs focus on harmonizing _existing_ packages (i.e. the retrospective appr
 
 We have [a set of _guidelines_](https://tidymodels.github.io/model-implementation-principles/) for making good modeling packages. For example:
 
-* Have multiple interfaces (e.g. formula, x/y, recipe, etc). 
+* Support multiple expected interfaces (e.g. formula, x/y, recipe, etc). 
 
-* The _user-facing interface_ should use the most appropriate data structures for the data (as opposed to the computations). For example, factor outcomes versus 0/1 indicators and data frames versus matrices.
+* The _user-facing interface_ should use the most intuitive data structures for the data (as opposed to the computations). For example, allowing factor outcomes versus requiring 0/1 indicators and data frames versus matrices.
 
 * Separate the interface that the **modeler** uses from the code to do the computations.
 
-* The `predict()` method should give standardized, predictable results. Standardized prediction types (`type = "prob"` for class probabilities `r emojifont::emoji('smile')`). 
+* The `predict()` method should produce standardized, predictable results, generated by a standardized `type` (i.e. `type = "prob"` for class probabilities `r emojifont::emoji('smile')`). 
 
 Rather than try to make method designers into software developers, have tools to **help them create high quality modeling packages**.
 
