@@ -371,22 +371,10 @@ background-image: url(images/hex_wall.png)
 background-size: contain
 
 ---
-layout: false
-class: inverse, middle, center
-
-
-
-# [`tidymodels.org`](https://www.tidymodels.org/)
-
-# _Tidy Modeling with R_ ([`tmwr.org`](https://www.tmwr.org/))
-
-
-
----
 
 # Selected Modeling Packages 
 
-* [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm`, `nls`, or `t.test`, and turns them into tidy data frames.
+* [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm()`, `nls()`, or `t.test()`, and turns them into tidy data frames.
 
 * [`recipes`](https://recipes.tidymodels.org/) is a general data preprocessor with a modern interface. It can create model matrices that incorporate feature engineering, imputation, and other tools.
 
@@ -406,11 +394,15 @@ detach("package:glmnet", character.only = TRUE)
 detach("package:Matrix", character.only = TRUE)
 detach("package:stats", character.only = TRUE)
 ```
+
 ```{r load-tm, warning = FALSE}
 library(tidymodels)
-tidymodels_prefer(quiet = FALSE)
 ```
 ]
+
+```{r prefer-tm, include = FALSE}
+tidymodels_prefer(quiet = TRUE)
+```
 
 ---
 
@@ -433,6 +425,15 @@ knitr::include_graphics("images/chicago.png")
 ```
 
 ]
+
+---
+
+# Our data
+
+```{r chicago-data}
+Chicago
+```
+
 
 ---
 
@@ -526,37 +527,6 @@ chicago_rec <- recipe(ridership ~ ., data = Chicago) %>%
   update_role(date, new_role = "id") %>% 
   step_dummy(all_nominal_predictors()) %>% 
   step_normalize(all_numeric_predictors()) #<<
-```
-
-
----
-
-# What are our _features_? `r I(hexes(c("recipes")))`
-
-```{r chicago-recipe-pca}
-chicago_rec <- recipe(ridership ~ ., data = Chicago) %>% 
-  step_date(date, features = c("dow", "month", "year")) %>% 
-  step_holiday(date) %>% 
-  update_role(date, new_role = "id") %>% 
-  step_dummy(all_nominal_predictors()) %>% 
-  step_normalize(all_numeric_predictors()) 
-
-#?  step_pca(all_of(stations), num_comp = 10) #<<
-```
-
----
-
-# What are our _features_? `r I(hexes(c("recipes")))`
-
-```{r chicago-recipe-ns}
-chicago_rec <- recipe(ridership ~ ., data = Chicago) %>% 
-  step_date(date, features = c("dow", "month", "year")) %>% 
-  step_holiday(date) %>% 
-  update_role(date, new_role = "id") %>% 
-  step_dummy(all_nominal_predictors()) %>% 
-  step_normalize(all_numeric_predictors()) 
-
-#?  step_ns(Harlem, deg_free = 5) #<<
 ```
 
 ---
@@ -981,10 +951,6 @@ These models are used to predict time-to-event data (in medicine, sports, HR, et
 ### Case weights
 
 Tedious, but often requested. This will impact many of the tidymodels packages.
-
-### Supervised feature selection
-
-Via recipe steps and other functions (e.g., backwards feature selection).
 
 ---
 

@@ -319,22 +319,10 @@ background-image: url(images/hex_wall.png)
 background-size: contain
 
 ---
-layout: false
-class: inverse, middle, center
-
-
-
-# [`tidymodels.org`](https://www.tidymodels.org/)
-
-# _Tidy Modeling with R_ ([`tmwr.org`](https://www.tmwr.org/))
-
-
-
----
 
 # Selected Modeling Packages 
 
-* [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm`, `nls`, or `t.test`, and turns them into tidy data frames.
+* [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm()`, `nls()`, or `t.test()`, and turns them into tidy data frames.
 
 * [`recipes`](https://recipes.tidymodels.org/) is a general data preprocessor with a modern interface. It can create model matrices that incorporate feature engineering, imputation, and other tools.
 
@@ -349,6 +337,7 @@ class: inverse, middle, center
 # Loading the Meta-Package &lt;img src="images/tidymodels.svg" class="title-hex"&gt;
 
 .code60[
+
 
 
 ```r
@@ -382,81 +371,11 @@ library(tidymodels)
 ## x purrr::discard()   masks scales::discard()
 ## x tidyr::extract()   masks magrittr::extract()
 ## x purrr::set_names() masks magrittr::set_names()
-## • Dig deeper into tidy modeling with R at https://www.tmwr.org
-```
-
-```r
-tidymodels_prefer(quiet = FALSE)
-```
-
-```
-## [conflicted] Will prefer dplyr::filter over any other package
-```
-
-```
-## [conflicted] Will prefer dplyr::select over any other package
-```
-
-```
-## [conflicted] Will prefer dplyr::slice over any other package
-```
-
-```
-## [conflicted] Will prefer dplyr::rename over any other package
-```
-
-```
-## [conflicted] Will prefer dials::neighbors over any other package
-```
-
-```
-## [conflicted] Will prefer parsnip::fit over any other package
-```
-
-```
-## [conflicted] Will prefer parsnip::bart over any other package
-```
-
-```
-## [conflicted] Will prefer parsnip::pls over any other package
-```
-
-```
-## [conflicted] Will prefer purrr::map over any other package
-```
-
-```
-## [conflicted] Will prefer recipes::step over any other package
-```
-
-```
-## [conflicted] Will prefer themis::step_downsample over any other package
-```
-
-```
-## [conflicted] Will prefer themis::step_upsample over any other package
-```
-
-```
-## [conflicted] Will prefer tune::tune over any other package
-```
-
-```
-## [conflicted] Will prefer yardstick::precision over any other package
-```
-
-```
-## [conflicted] Will prefer yardstick::recall over any other package
-```
-
-```
-## ── Conflicts ──────────────────────────────────────────── tidymodels_prefer() ──
-```
-
-```
-## 
+## • Use suppressPackageStartupMessages() to eliminate package startup messages
 ```
 ]
+
+
 
 ---
 
@@ -477,6 +396,39 @@ What are our predictors? Date, weather data, home game schedules, 14-day lags at
 &lt;img src="images/chicago.png" width="100%" style="display: block; margin: auto;" /&gt;
 
 ]
+
+---
+
+# Our data
+
+
+```r
+Chicago
+```
+
+```
+## # A tibble: 5,698 × 50
+##    ridership Austin Quincy_Wells Belmont Archer_35th Oak_Park Western Clark_Lake
+##        &lt;dbl&gt;  &lt;dbl&gt;        &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+##  1     15.7   1.46         8.37     4.60       2.01     1.42    3.32       15.6 
+##  2     15.8   1.50         8.35     4.72       2.09     1.43    3.34       15.7 
+##  3     15.9   1.52         8.36     4.68       2.11     1.49    3.36       15.6 
+##  4     15.9   1.49         7.85     4.77       2.17     1.44    3.36       15.7 
+##  5     15.4   1.50         7.62     4.72       2.06     1.42    3.27       15.6 
+##  6      2.42  0.693        0.911    2.27       0.624    0.426   1.11        2.41
+##  7      1.47  0.408        0.414    1.63       0.378    0.225   0.567       1.37
+##  8     15.5   0.987        4.81     3.52       1.34     0.879   1.94        9.02
+##  9     15.9   1.55         8.23     4.71       2.22     1.46    3.46       16.0 
+## 10     15.9   1.59         8.25     4.77       2.23     1.48    3.51       15.8 
+## # … with 5,688 more rows, and 42 more variables: Clinton &lt;dbl&gt;,
+## #   Merchandise_Mart &lt;dbl&gt;, Irving_Park &lt;dbl&gt;, Washington_Wells &lt;dbl&gt;,
+## #   Harlem &lt;dbl&gt;, Monroe &lt;dbl&gt;, Polk &lt;dbl&gt;, Ashland &lt;dbl&gt;, Kedzie &lt;dbl&gt;,
+## #   Addison &lt;dbl&gt;, Jefferson_Park &lt;dbl&gt;, Montrose &lt;dbl&gt;, California &lt;dbl&gt;,
+## #   temp_min &lt;dbl&gt;, temp &lt;dbl&gt;, temp_max &lt;dbl&gt;, temp_change &lt;dbl&gt;, dew &lt;dbl&gt;,
+## #   humidity &lt;dbl&gt;, pressure &lt;dbl&gt;, pressure_change &lt;dbl&gt;, wind &lt;dbl&gt;,
+## #   wind_max &lt;dbl&gt;, gust &lt;dbl&gt;, gust_max &lt;dbl&gt;, percip &lt;dbl&gt;, …
+```
+
 
 ---
 
@@ -576,39 +528,6 @@ chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;%
   update_role(date, new_role = "id") %&gt;% 
   step_dummy(all_nominal_predictors()) %&gt;% 
 * step_normalize(all_numeric_predictors())
-```
-
-
----
-
-# What are our _features_? &lt;img src="images/recipes.svg" class="title-hex"&gt;
-
-
-```r
-chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;% 
-  step_date(date, features = c("dow", "month", "year")) %&gt;% 
-  step_holiday(date) %&gt;% 
-  update_role(date, new_role = "id") %&gt;% 
-  step_dummy(all_nominal_predictors()) %&gt;% 
-  step_normalize(all_numeric_predictors()) 
-
-*#?  step_pca(all_of(stations), num_comp = 10)
-```
-
----
-
-# What are our _features_? &lt;img src="images/recipes.svg" class="title-hex"&gt;
-
-
-```r
-chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;% 
-  step_date(date, features = c("dow", "month", "year")) %&gt;% 
-  step_holiday(date) %&gt;% 
-  update_role(date, new_role = "id") %&gt;% 
-  step_dummy(all_nominal_predictors()) %&gt;% 
-  step_normalize(all_numeric_predictors()) 
-
-*#?  step_ns(Harlem, deg_free = 5)
 ```
 
 ---
@@ -1169,10 +1088,6 @@ These models are used to predict time-to-event data (in medicine, sports, HR, et
 ### Case weights
 
 Tedious, but often requested. This will impact many of the tidymodels packages.
-
-### Supervised feature selection
-
-Via recipe steps and other functions (e.g., backwards feature selection).
 
 ---
 
