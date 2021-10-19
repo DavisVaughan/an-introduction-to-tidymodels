@@ -114,120 +114,7 @@ Syntax for computing predicted class probabilities:
 |`logitboost`  |`LogitBoost` |`predict(obj, type = "raw", nIter)`        |
 |`pamr.train`  |`pamr`       |`pamr.predict(obj, type = "posterior")`    |
 
----
-
-# Within-Package Inconsistency: `glmnet` Predictions
-
-
- 
-The `glmnet` model can be used to fit regularized generalized linear models with a mixture of L&lt;sub&gt;1&lt;/sub&gt; and L&lt;sub&gt;2&lt;/sub&gt; penalties. 
-
-We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values.
-
----
-
-# Numeric `glmnet` Predictions
-
-The models shown below contain solutions for 3 regularization values ( `\(\lambda\)` ), `0.01`, `0.1`, and `1`.
-
-The predict method gives the results for all three at once (👍).
-
-
-```r
-new_x
-```
-
-```
-##             x1     x2     x3     x4
-## sample_1 1.649 -0.483 -0.294 -0.815
-## sample_2 0.656 -0.420  0.880  0.109
-```
-
-```r
-predict(reg_mod, newx = new_x)
-```
-
-```
-##            s0   s1 s2
-## sample_1 9.95 9.95 10
-## sample_2 9.95 9.95 10
-```
-
-A matrix result and we will assume that the `\(\lambda\)` values are in the same order as what we gave to the model fit function.
-
----
-# `glmnet` predictions formats
-
-**Numeric model, numeric prediction**
-
- - numeric `[sample x penalty]` array
-
---
-
-**Binary model, class prediction**
-
-- _character_ `[sample x penalty]` array  (Note: outcome input is required to be a factor)
-
---
-
-**Binary model, probability prediction**
-
-- _numeric_ `[sample x penalty]` array (values are 2nd factor level)
-
---
-
-**Multinomial model, probability prediction**
-
-- _numeric_ `[class x sample x penalty]` array
-
-
----
-
-# `glmnet` predictions formats
-
-.pull-left-a-lot[
-
-Most people have at least four different scripts for the same model 😳
-
-&gt; _Am I working for `glmnet` or is it is working for me?_
-
-Maybe a structure like this would work better:
-
-]
-
-.pull-right-a-little[
-
-
-```
-## # A tibble: 3 × 2
-##   pred  lambda
-##   &lt;fct&gt;  &lt;dbl&gt;
-## 1 b        1  
-## 2 b        1  
-## 3 a        0.1
-```
-
-
-```
-## # A tibble: 3 × 3
-##       a     b lambda
-##   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;
-## 1 0.500 0.500    1  
-## 2 0.500 0.500    1  
-## 3 0.500 0.500    0.1
-```
-
-
-```
-## # A tibble: 3 × 4
-##       a     b     c lambda
-##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;
-## 1 0.333 0.333 0.333    1  
-## 2 0.333 0.333 0.333    1  
-## 3 0.333 0.333 0.333    0.1
-```
-
-]
+Even tougher are the _within-package_ inconsistencies. glmnet and survival are two cases where we have had significant trouble handling within-package issues.
 
 ---
 
@@ -371,7 +258,7 @@ library(tidymodels)
 ## x purrr::discard()   masks scales::discard()
 ## x tidyr::extract()   masks magrittr::extract()
 ## x purrr::set_names() masks magrittr::set_names()
-## • Use suppressPackageStartupMessages() to eliminate package startup messages
+## • Use tidymodels_prefer() to resolve common conflicts.
 ```
 ]
 
@@ -856,6 +743,10 @@ recipe() %&gt;%
 
 # Resampling and grid search &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/rsample.svg" class="title-hex"&gt;
 
+.code60[
+
+.pull-left[
+
 We'll use time series resampling and grid search to optimize the model:
 
 
@@ -884,6 +775,18 @@ print(chicago_rs, n = 6)
 ## 6 &lt;split [5143/31]&gt; Slice06
 ## # … with 13 more rows
 ```
+
+]
+
+.pull-right[
+
+&lt;img src="images/time-series-resampling.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+From: https://thierrymoudiki.github.io//blog/2020/03/27/r/misc/crossval-2
+
+]
+
+]
 
 ---
 
@@ -989,30 +892,11 @@ show_best(glmnet_tune, metric = "rmse")
 
 ---
 
-# Grid search  results &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.svg" class="title-hex"&gt;
+# Default space-filling design &lt;img src="images/tune.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.svg" class="title-hex"&gt;
 
 
 
-
-.pull-left[
-
-Grid points using the default space-filling design:
-
-&lt;img src="index_files/figure-html/plot-grid-1.svg" width="80%" style="display: block; margin: auto;" /&gt;
-
-]
-
-.pull-right[
-
-
-```r
-ggplot2::autoplot(glmnet_tune)
-```
-
-&lt;img src="index_files/figure-html/plot-grid-res-1.svg" width="80%" style="display: block; margin: auto;" /&gt;
-
-]
-
+&lt;img src="index_files/figure-html/plot-grid-1.svg" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -1024,7 +908,7 @@ There are functions to:
 
 - Substitute the best parameters for the `tune()` placeholders
 
-- Fit the final model
+- Fit the final model with `tune::last_fit()`
 
 - Measure the test set performance 
 

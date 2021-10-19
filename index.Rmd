@@ -36,7 +36,6 @@ background-color: #F9F8F3
 ]
 
 ```{r startup, include = FALSE, message = FALSE, warning = FALSE}
-library(glmnet)
 library(glue)
 library(magrittr)
 
@@ -139,147 +138,7 @@ Syntax for computing predicted class probabilities:
 |`logitboost`  |`LogitBoost` |`predict(obj, type = "raw", nIter)`        |
 |`pamr.train`  |`pamr`       |`pamr.predict(obj, type = "posterior")`    |
 
----
-
-# Within-Package Inconsistency: `glmnet` Predictions
-
-```{r glmnet-mod, include = FALSE}
-sim_n <- 300
-
-set.seed(1244)
-dat <- data.frame(
-  two_class = rep(letters[1:2], each = sim_n / 2),
-  three_class = rep(letters[1:3], each = sim_n / 3),
-  numeric = rnorm(sim_n) + 10,
-  x1 = rnorm(sim_n),
-  x2 = rnorm(sim_n),
-  x3 = rnorm(sim_n),
-  x4 = rnorm(sim_n)
-)
-
-x <- as.matrix(dat[,-(1:3)])
-new_x <- head(x, 2)
-rownames(new_x) <- paste0("sample_", 1:2)
-
-reg_mod <-
-  glmnet(x, y = dat$numeric, lambda = c(0.01, 0.1, 1))
-
-two_class_mod <-
-  glmnet(
-    x,
-    y = dat$two_class,
-    nlambda = 3,
-    family = "binomial", 
-    lambda = c(0.01, 0.1, 1)
-  )
-
-three_class_mod <-
-  glmnet(
-    x,
-    y = dat$three_class,
-    nlambda = 3,
-    family = "multinomial", 
-    lambda = c(0.01, 0.1, 1)
-  )
-
-two_pred <- predict(two_class_mod, newx = new_x, type = "response")
-two_pred <- tibble::as_tibble(two_pred)
-two_pred <- tidyr::pivot_longer(two_pred, everything())
-two_pred <- dplyr::mutate(two_pred, lambda = rep(two_class_mod$lambda, times = 2))
-
-two_pred_prob <- two_pred %>%
-  dplyr::rename(a = value) %>%
-  dplyr::mutate(b = 1 - a) %>%
-  dplyr::select(a, b, lambda) %>%
-  dplyr::arrange(desc(lambda))
-
-two_pred_class <- two_pred %>%
-  dplyr::mutate(pred = factor(ifelse(value >= .5, "a", "b"), levels = c("a", "b"))) %>%
-  dplyr::select(pred, lambda) %>%
-  dplyr::arrange(desc(lambda))
-
-three_pred <- predict(three_class_mod, newx = new_x, type = "response")
-three_pred <- apply(three_pred, 3, function(x) data.frame(x)) 
-three_pred <- dplyr::bind_rows(three_pred)
-three_pred <- dplyr::mutate(three_pred, lambda = rep(three_class_mod$lambda, each = 2))
-three_pred <- tibble::as_tibble(three_pred)
-```
- 
-The `glmnet` model can be used to fit regularized generalized linear models with a mixture of L<sub>1</sub> and L<sub>2</sub> penalties. 
-
-We'll look at what happens when we get predictions for a regression model (i.e. numeric _Y_) as well as classification models where _Y_ has two or three categorical values.
-
----
-
-# Numeric `glmnet` Predictions
-
-The models shown below contain solutions for 3 regularization values ( $\lambda$ ), `0.01`, `0.1`, and `1`.
-
-The predict method gives the results for all three at once (`r emojifont::emoji('+1')`).
-
-```{r glmnet-reg}
-new_x
-
-predict(reg_mod, newx = new_x)
-```
-
-A matrix result and we will assume that the $\lambda$ values are in the same order as what we gave to the model fit function.
-
----
-# `glmnet` predictions formats
-
-**Numeric model, numeric prediction**
-
- - numeric `[sample x penalty]` array
-
---
-
-**Binary model, class prediction**
-
-- _character_ `[sample x penalty]` array  (Note: outcome input is required to be a factor)
-
---
-
-**Binary model, probability prediction**
-
-- _numeric_ `[sample x penalty]` array (values are 2nd factor level)
-
---
-
-**Multinomial model, probability prediction**
-
-- _numeric_ `[class x sample x penalty]` array
-
-
----
-
-# `glmnet` predictions formats
-
-.pull-left-a-lot[
-
-Most people have at least four different scripts for the same model `r emojifont::emoji('flushed')`
-
-> _Am I working for `glmnet` or is it is working for me?_
-
-Maybe a structure like this would work better:
-
-]
-
-.pull-right-a-little[
-
-```{r better-glmnet-prob, echo = FALSE}
-head(two_pred_class, n = 3)
-```
-
-```{r better-glmnet-class, echo = FALSE}
-head(two_pred_prob, n = 3)
-```
-
-```{r better-glmnet-class-2, echo = FALSE}
-head(three_pred, n = 3)
-```
-
-]
+Even tougher are the _within-package_ inconsistencies. glmnet and survival are two cases where we have had significant trouble handling within-package issues.
 
 ---
 
@@ -390,8 +249,6 @@ background-size: contain
 
 .code60[
 ```{r detach, include = FALSE}
-detach("package:glmnet", character.only = TRUE)
-detach("package:Matrix", character.only = TRUE)
 detach("package:stats", character.only = TRUE)
 ```
 
@@ -772,6 +629,10 @@ recipe() %>%
 
 # Resampling and grid search `r I(hexes(c("rsample", "tune")))`
 
+.code60[
+
+.pull-left[
+
 We'll use time series resampling and grid search to optimize the model:
 
 ```{r rs}
@@ -785,6 +646,20 @@ chicago_rs <- sliding_period(
 
 print(chicago_rs, n = 6)
 ```
+
+]
+
+.pull-right[
+
+```{r rs-image, echo = FALSE, out.width = "100%", fig.align="center"}
+knitr::include_graphics("images/time-series-resampling.png")
+```
+
+From: https://thierrymoudiki.github.io//blog/2020/03/27/r/misc/crossval-2
+
+]
+
+]
 
 ---
 
@@ -837,7 +712,7 @@ show_best(glmnet_tune, metric = "rmse")
 
 ---
 
-# Grid search  results `r I(hexes(c("tune", "ggplot2")))`
+# Default space-filling design `r I(hexes(c("tune", "ggplot2")))`
 
 ```{r theme, include = FALSE}
 thm <- theme_bw() + 
@@ -851,12 +726,7 @@ thm <- theme_bw() +
 theme_set(thm)
 ```
 
-
-.pull-left[
-
-Grid points using the default space-filling design:
-
-```{r plot-grid, echo = FALSE, fig.width=5, fig.height=5,  out.width = '80%', fig.align='center', dev = 'svg', dev.args = list(bg = "transparent")}
+```{r plot-grid, echo = FALSE, fig.height=5, fig.align='center', dev = 'svg', dev.args = list(bg = "transparent")}
 glmnet_tune %>% 
   show_best(n = 25, metric = "rmse") %>% 
   dplyr::filter(.metric == "rmse") %>% 
@@ -866,17 +736,6 @@ glmnet_tune %>%
   labs(x = "Proportion of lasso Penalty (mixture)", y = "Amount of Regularization (penalty, log10)") +
   xlim(0:1)
 ```
-
-]
-
-.pull-right[
-
-```{r plot-grid-res, fig.width=5, fig.height=5,  out.width = '80%', fig.align='center', dev = 'svg', dev.args = list(bg = "transparent")}
-ggplot2::autoplot(glmnet_tune)
-```
-
-]
-
 
 ---
 
@@ -888,7 +747,7 @@ There are functions to:
 
 - Substitute the best parameters for the `tune()` placeholders
 
-- Fit the final model
+- Fit the final model with `tune::last_fit()`
 
 - Measure the test set performance 
 
