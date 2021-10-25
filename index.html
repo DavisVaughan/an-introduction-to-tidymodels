@@ -166,25 +166,6 @@ __The principles of the tidyverse:__
 
 ---
 
-# Tidyverse
-
-.pull-left[
-
-__The notion of [tidy data](http://vita.had.co.nz/papers/tidy-data.pdf):__ 
-
-1. Each variable forms a column.
-1. Each observation forms a row.
-1. Each type of observational unit forms a table.
-
-]
-.pull-right[
-
-Based on these ideas, we can create modeling packages that have predictable results and are a pleasure to use. 
-
-] 
-
----
-
 # Tidymodels 
 
 `tidymodels` is a collection of modeling packages that live in the tidyverse that are guided by the same design principles.
@@ -208,8 +189,6 @@ background-size: contain
 ---
 
 # Selected Modeling Packages 
-
-* [`broom`](https://broom.tidymodels.org/) takes the messy output of built-in functions in R, such as `lm()`, `nls()`, or `t.test()`, and turns them into tidy data frames.
 
 * [`recipes`](https://recipes.tidymodels.org/) is a general data preprocessor with a modern interface. It can create model matrices that incorporate feature engineering, imputation, and other tools.
 
@@ -258,7 +237,7 @@ library(tidymodels)
 ## x purrr::discard()   masks scales::discard()
 ## x tidyr::extract()   masks magrittr::extract()
 ## x purrr::set_names() masks magrittr::set_names()
-## • Use tidymodels_prefer() to resolve common conflicts.
+## • Use suppressPackageStartupMessages() to eliminate package startup messages
 ```
 ]
 
@@ -445,6 +424,29 @@ chicago_rec &lt;- recipe(ridership ~ ., data = Chicago) %&gt;%
   update_role(date, new_role = "id") %&gt;% 
   step_dummy(all_nominal_predictors()) %&gt;% 
   step_normalize(all_numeric_predictors()) 
+```
+
+
+```r
+chicago_rec
+```
+
+```
+## Recipe
+## 
+## Inputs:
+## 
+##       role #variables
+##         id          1
+##    outcome          1
+##  predictor         48
+## 
+## Operations:
+## 
+## Date features from date
+## Holiday features from date
+## Dummy variables from all_nominal_predictors()
+## Centering and scaling for all_numeric_predictors()
 ```
 
 ---
