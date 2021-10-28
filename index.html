@@ -223,7 +223,7 @@ library(tidymodels)
 ```
 ## ✓ broom        0.7.9           ✓ recipes      0.1.17     
 ## ✓ dials        0.0.10.9000     ✓ rsample      0.1.0      
-## ✓ dplyr        1.0.7           ✓ tibble       3.1.5      
+## ✓ dplyr        1.0.7           ✓ tibble       3.1.6.9000 
 ## ✓ ggplot2      3.3.5           ✓ tidyr        1.1.4      
 ## ✓ infer        1.0.0           ✓ tune         0.1.6.9000 
 ## ✓ modeldata    0.1.1           ✓ workflows    0.2.3.9000 
@@ -237,7 +237,7 @@ library(tidymodels)
 ## x purrr::discard()   masks scales::discard()
 ## x tidyr::extract()   masks magrittr::extract()
 ## x purrr::set_names() masks magrittr::set_names()
-## • Use suppressPackageStartupMessages() to eliminate package startup messages
+## • Search for functions across packages at https://www.tidymodels.org/find/
 ```
 ]
 
@@ -269,30 +269,24 @@ What are our predictors? Date, weather data, home game schedules, 14-day lags at
 
 
 ```r
-Chicago
+select(Chicago, ridership, date, Bulls_Home, wind, temp)
 ```
 
 ```
-## # A tibble: 5,698 × 50
-##    ridership Austin Quincy_Wells Belmont Archer_35th Oak_Park Western Clark_Lake
-##        &lt;dbl&gt;  &lt;dbl&gt;        &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
-##  1     15.7   1.46         8.37     4.60       2.01     1.42    3.32       15.6 
-##  2     15.8   1.50         8.35     4.72       2.09     1.43    3.34       15.7 
-##  3     15.9   1.52         8.36     4.68       2.11     1.49    3.36       15.6 
-##  4     15.9   1.49         7.85     4.77       2.17     1.44    3.36       15.7 
-##  5     15.4   1.50         7.62     4.72       2.06     1.42    3.27       15.6 
-##  6      2.42  0.693        0.911    2.27       0.624    0.426   1.11        2.41
-##  7      1.47  0.408        0.414    1.63       0.378    0.225   0.567       1.37
-##  8     15.5   0.987        4.81     3.52       1.34     0.879   1.94        9.02
-##  9     15.9   1.55         8.23     4.71       2.22     1.46    3.46       16.0 
-## 10     15.9   1.59         8.25     4.77       2.23     1.48    3.51       15.8 
-## # … with 5,688 more rows, and 42 more variables: Clinton &lt;dbl&gt;,
-## #   Merchandise_Mart &lt;dbl&gt;, Irving_Park &lt;dbl&gt;, Washington_Wells &lt;dbl&gt;,
-## #   Harlem &lt;dbl&gt;, Monroe &lt;dbl&gt;, Polk &lt;dbl&gt;, Ashland &lt;dbl&gt;, Kedzie &lt;dbl&gt;,
-## #   Addison &lt;dbl&gt;, Jefferson_Park &lt;dbl&gt;, Montrose &lt;dbl&gt;, California &lt;dbl&gt;,
-## #   temp_min &lt;dbl&gt;, temp &lt;dbl&gt;, temp_max &lt;dbl&gt;, temp_change &lt;dbl&gt;, dew &lt;dbl&gt;,
-## #   humidity &lt;dbl&gt;, pressure &lt;dbl&gt;, pressure_change &lt;dbl&gt;, wind &lt;dbl&gt;,
-## #   wind_max &lt;dbl&gt;, gust &lt;dbl&gt;, gust_max &lt;dbl&gt;, percip &lt;dbl&gt;, …
+## # A tibble: 5,698 × 5
+##    ridership date       Bulls_Home  wind  temp
+##        &lt;dbl&gt; &lt;date&gt;          &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1     15.7  2001-01-22          0   5.2  19.4
+##  2     15.8  2001-01-23          1   8.1  30.4
+##  3     15.9  2001-01-24          0  10.4  25  
+##  4     15.9  2001-01-25          0   9.8  22.4
+##  5     15.4  2001-01-26          0  12.7  27  
+##  6      2.42 2001-01-27          1  12.7  24.8
+##  7      1.47 2001-01-28          0   8.1  18  
+##  8     15.5  2001-01-29          0   8.1  32  
+##  9     15.9  2001-01-30          0   9.2  37.4
+## 10     15.9  2001-01-31          0  11.5  34  
+## # … with 5,688 more rows
 ```
 
 

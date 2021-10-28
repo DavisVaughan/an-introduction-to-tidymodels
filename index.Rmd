@@ -267,7 +267,7 @@ knitr::include_graphics("images/chicago.png")
 # Our data
 
 ```{r chicago-data}
-Chicago
+select(Chicago, ridership, date, Bulls_Home, wind, temp)
 ```
 
 
